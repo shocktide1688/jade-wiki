@@ -105,7 +105,9 @@ jobs:
           path: frontend/dist/
 
   publish:
-    needs: [backend, frontend]
+    # 只依赖 backend (frontend 镜像直接从源码构建, 不用 frontend job 的 artifact;
+    # needs frontend 会被 paths-filter 的 skip 连坐导致 publish 不跑)
+    needs: [backend]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
