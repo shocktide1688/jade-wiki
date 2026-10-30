@@ -115,6 +115,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v5
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Log in to GHCR
@@ -136,6 +138,7 @@ jobs:
         with:
           context: backend
           file: backend/jade-wiki/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta-backend.outputs.tags }}
           labels: ${{ steps.meta-backend.outputs.labels }}
@@ -154,6 +157,7 @@ jobs:
         with:
           context: frontend
           file: frontend/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta-frontend.outputs.tags }}
           labels: ${{ steps.meta-frontend.outputs.labels }}
