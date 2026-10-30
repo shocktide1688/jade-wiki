@@ -302,25 +302,27 @@ jobs:
           D=$(cat /tmp/digests/native-sqlite-amd64/* /tmp/digests/native-sqlite-arm64/*)
           docker buildx imagetools create \
             -t ghcr.io/shocktide1688/jade-wiki-native:sqlite \
-            $(printf 'ghcr.io/shocktide1688/jade-wiki-native@sha256:%s ' $D)
+            $(printf 'ghcr.io/shocktide1688/jade-wiki-native-sqlite@sha256:%s ' $D)
       - name: Merge manifest — jade-wiki-native (postgresql 生产)
         run: |
           D=$(cat /tmp/digests/native-postgresql-amd64/* /tmp/digests/native-postgresql-arm64/*)
           docker buildx imagetools create \
-            -t ghcr.io/shocktide1688/jade-wiki-native:latest \
-            -t ghcr.io/shocktide1688/jade-wiki-native:pg \
-            -t ghcr.io/shocktide1688/jade-wiki-native:sha-${GITHUB_SHA::7} \
-            $(printf 'ghcr.io/shocktide1688/jade-wiki-native@sha256:%s ' $D)
-      - name: Merge manifest — jade-wiki (all-in-one sqlite 自托管)
+            -t ghcr.io/shocktide1688/jade-wiki-native-postgresql:latest \
+            -t ghcr.io/shocktide1688/jade-wiki-native-postgresql:pg \
+            -t ghcr.io/shocktide1688/jade-wiki-native-postgresql:sha-${GITHUB_SHA::7} \
+            $(printf 'ghcr.io/shocktide1688/jade-wiki-native-postgresql@sha256:%s ' $D)
+      - name: Merge manifest — jade-wiki (all-in-one sqlite 自托管, 主推)
         run: |
           D=$(cat /tmp/digests/aio-sqlite-amd64/* /tmp/digests/aio-sqlite-arm64/*)
           docker buildx imagetools create \
             -t ghcr.io/shocktide1688/jade-wiki:latest \
+            -t ghcr.io/shocktide1688/jade-wiki:sqlite \
             -t ghcr.io/shocktide1688/jade-wiki:sha-${GITHUB_SHA::7} \
-            $(printf 'ghcr.io/shocktide1688/jade-wiki@sha256:%s ' $D)
+            $(printf 'ghcr.io/shocktide1688/jade-wiki-sqlite@sha256:%s ' $D)
       - name: Merge manifest — jade-wiki (all-in-one postgresql)
         run: |
           D=$(cat /tmp/digests/aio-postgresql-amd64/* /tmp/digests/aio-postgresql-arm64/*)
           docker buildx imagetools create \
+            -t ghcr.io/shocktide1688/jade-wiki-postgresql:latest \
             -t ghcr.io/shocktide1688/jade-wiki:pg \
-            $(printf 'ghcr.io/shocktide1688/jade-wiki@sha256:%s ' $D)
+            $(printf 'ghcr.io/shocktide1688/jade-wiki-postgresql@sha256:%s ' $D)
