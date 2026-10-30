@@ -22,6 +22,12 @@
             <version>${jade.version}</version>
         </dependency>
 
+        <!-- MCP: PAT 鉴权 + Streamable HTTP 端点 + token 管理 API (基座通用件) -->
+        <dependency>
+            <groupId>com.jade</groupId>
+            <artifactId>jade-mcp</artifactId>
+        </dependency>
+
         <!-- Quarkus 扩展 -->
         <dependency>
             <groupId>io.quarkus</groupId>

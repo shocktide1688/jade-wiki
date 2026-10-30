@@ -128,10 +128,36 @@ POST   /api/open/wiki/page/save              开放API推送文档(免登录)
 
 OpenAPI: http://localhost:8082/q/openapi · Swagger UI: http://localhost:8082/q/swagger-ui
 
+## MCP 接入 (AI 助手读文档)
+
+个人中心 → 「MCP 访问令牌」生成 PAT (仅显示一次), 然后配置 AI 客户端:
+
+```bash
+# Claude Code / ZCode
+claude mcp add --transport http jade-wiki http://localhost:8082/mcp \
+  --header "X-Mcp-Token: <你的PAT>"
+
+# Claude Desktop / Cursor (mcp.json)
+{ "mcpServers": { "jade-wiki": {
+    "url": "http://localhost:8082/mcp",
+    "headers": { "X-Mcp-Token": "<你的PAT>" } } } }
+```
+
+可用工具 (只读, 权限与令牌所属账号一致):
+
+| 工具 | 说明 |
+|---|---|
+| `list_projects` | 列出可见项目 |
+| `get_project_tree` | 项目目录树 + 页面清单 |
+| `search_pages` | 标题+正文全文搜索 |
+| `read_page` | 读取页面 Markdown |
+
+MCP 服务端为基座通用模块 `jade-mcp` (jade-boot), 各产品 (wiki/ldap/商城) 只需挂领域 @Tool。
+
 ## 路线图
 
 - **M2**：导出 word/离线 HTML、单页项目(item_type=single)、附件管理页、回收站彻底删除/定期清理
-- **M3**：管理端（项目总览/审计）、**jade-ldap 接入**（LDAP bind 登录 + 用户组同步）、开放 API HMAC 签名加固
+- **M3**：管理端（项目总览/审计）、**jade-ldap 接入**（LDAP bind 登录 + 用户组同步）、开放 API HMAC 签名加固、MCP 写路径评估
 - **M4**：RunAPI 式接口调试、Grafana 仪表板
 
 ## 架构

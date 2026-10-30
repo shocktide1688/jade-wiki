@@ -90,3 +90,13 @@ git push origin v1.0.0
 - 时间统一存 UTC；MySQL 用 `DATETIME(6)`，SQLite 用 TEXT
 - CI 需对三库各跑一遍测试矩阵防漂移（PG/MySQL Testcontainers，SQLite 临时文件）
 - SQLite 连接串必须带 `date_class=text`（xerial 驱动 Timestamp 存储格式问题）
+
+
+## MCP 约定 (jade-mcp 基座模块)
+
+- 通用件 (PAT 表/鉴权机制/token API) 在 jade-boot 的 `jade-mcp` 模块; 产品只写 `@Tool` 领域工具
+- 认证: 请求头 `X-Mcp-Token` (不用 Authorization —— 底座 smallrye-jwt 会把 Bearer 当 JWT 校验)
+- 鉴权必须走 `HttpAuthenticationMechanism` (MCP 端点走 vert.x 路由, ContainerRequestFilter 拦不到)
+- 令牌校验含 DB 查询: authenticate 内需 worker 线程 + 手动激活 request context (参考 McpTokenAuthMechanism)
+- 无效令牌返回 null (匿名 → 401), 不要抛异常 (JAX-RS 兜底 mapper 会转 500)
+- 工具错误: read 类返回错误文本 / 列表类抛 RuntimeException (JSON-RPC -32603)

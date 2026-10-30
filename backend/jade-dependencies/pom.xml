@@ -17,6 +17,7 @@
 
     <properties>
         <quarkiverse-jdbc.version>3.0.11</quarkiverse-jdbc.version>
+        <quarkiverse-mcp.version>2.0.4</quarkiverse-mcp.version>
     </properties>
 
     <dependencyManagement>
@@ -30,6 +31,21 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-community-dialects</artifactId>
+            </dependency>
+
+            <!-- MCP Server (Streamable HTTP, @Tool 注解) -->
+            <dependency>
+                <groupId>io.quarkiverse.mcp</groupId>
+                <artifactId>quarkus-mcp-server-bom</artifactId>
+                <version>${quarkiverse-mcp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.jade</groupId>
+                <artifactId>jade-mcp</artifactId>
+                <version>${jade.version}</version>
             </dependency>
 
             <!-- Jade 内部 starter -->
