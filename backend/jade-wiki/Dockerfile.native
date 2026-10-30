@@ -1,0 +1,80 @@
+# =====================================================
+# Jade Wiki · GraalVM Native Image
+# 完全在容器内构建，宿主机无需 GraalVM
+# 用法（在 backend/ 目录下）：
+#   docker build -f jade-wiki/Dockerfile.native -t jade-wiki:native .
+#   docker run --rm -p 8082:8082 --cpus=4 --memory=6g jade-wiki:native
+# =====================================================
+
+# ---------- Stage 1: Native Builder ----------
+FROM ghcr.io/graalvm/native-image-community:25 AS builder
+
+USER root
+WORKDIR /build
+
+RUN microdnf install -y --disablerepo="*" --enablerepo=ol10_baseos_latest \
+        tar gzip findutils \
+    && microdnf clean all
+
+ENV JAVA_HOME=/usr/lib64/graalvm/graalvm-community-java25
+ENV PATH=$JAVA_HOME/bin:$JAVA_HOME/lib/svm/bin:$PATH
+
+ARG MAVEN_VERSION=3.9.6
+RUN curl -fsSL -o /tmp/maven.tar.gz \
+        https://repo1.maven.org/maven2/org/apache/maven/apache-maven/${MAVEN_VERSION}/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
+    && tar -xzf /tmp/maven.tar.gz -C /opt \
+    && ln -s /opt/apache-maven-${MAVEN_VERSION}/bin/mvn /usr/local/bin/mvn \
+    && rm /tmp/maven.tar.gz
+
+# 拷贝 pom（最大化缓存）
+COPY pom.xml ./
+COPY jade-dependencies/pom.xml jade-dependencies/
+COPY jade-common/pom.xml jade-common/
+COPY jade-web/pom.xml jade-web/
+COPY jade-security/pom.xml jade-security/
+COPY jade-log/pom.xml jade-log/
+COPY jade-oss/pom.xml jade-oss/
+COPY jade-codegen/pom.xml jade-codegen/
+COPY jade-admin/pom.xml jade-admin/
+COPY jade-mcp/pom.xml jade-mcp/
+COPY jade-mail/pom.xml jade-mail/
+COPY jade-ldap-client/pom.xml jade-ldap-client/
+COPY jade-wiki/pom.xml jade-wiki/
+
+RUN mvn -B -q -DskipTests dependency:go-offline || true
+
+# 拷贝源码并构建 native
+# -march=compatibility: 兼容旧 x86-64 CPU (CI 新 CPU 构建的二进制在旧部署机不炸)
+COPY . .
+RUN mvn -B -DskipTests \
+        -pl jade-wiki -am \
+        clean package \
+        -Dnative \
+        -Dquarkus.native.additional-build-args=-march=compatibility
+
+RUN ls -lh /build/jade-wiki/target/jade-wiki-*-runner
+
+# ---------- Stage 2: 运行时镜像 ----------
+FROM debian:bookworm-slim
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates libstdc++6 zlib1g libgcc1 wget \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/jade-wiki/target/jade-wiki-*-runner /app/jade-wiki
+RUN chmod +x /app/jade-wiki
+
+# SQLite 模式数据落盘 (挂卷)
+VOLUME ["/app/data"]
+RUN mkdir -p /app/data
+
+EXPOSE 8082
+
+ENV JADE_DB_VENDOR=sqlite
+ENV DB_URL="jdbc:sqlite:./data/jade_wiki.db?journal_mode=WAL&busy_timeout=5000&date_class=text"
+
+ENTRYPOINT ["/app/jade-wiki"]
+
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
+    CMD wget -qO- http://localhost:8082/q/health/live || exit 1
