@@ -1,0 +1,68 @@
+# ========================================
+# Jade Platform .gitignore
+# ========================================
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+mvnw
+mvnw.cmd
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+HELP.md
+*.log
+hs_err_pid*
+
+# Node / Frontend
+node_modules/
+dist/
+backend/jade-wiki/data/
+*.db
+*.db-wal
+*.db-shm
+uploads/
+dist-ssr/
+*.local
+.vite/
+.cache/
+coverage/
+.npm
+.eslintcache
+
+# Auto-generated
+frontend/src/auto-imports.d.ts
+frontend/src/components.d.ts
+frontend/src/api/generated/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project: ignore docs/ (kept local only)
+docs/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Grafana render 失败的临时截图
+monitoring/screenshots/
+
+# TS 增量编译缓存
+frontend/tsconfig.tsbuildinfo

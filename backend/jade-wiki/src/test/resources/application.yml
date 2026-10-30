@@ -1,0 +1,44 @@
+# ============ jade-wiki 测试环境 ============
+# 同名 application.yml 会整体遮蔽主配置(test-classes 在 classpath 前面)
+# 默认连本地 wiki PG(5434) 的 jade_wiki_test 库; CI 用 WIKI_TEST_DB_URL 覆盖
+quarkus:
+  datasource:
+    db-kind: postgresql
+    username: postgres
+    password: postgres
+    jdbc:
+      url: "${WIKI_TEST_DB_URL:jdbc:postgresql://localhost:5434/jade_wiki_test?currentSchema=public}"
+      max-size: 8
+  flyway:
+    migrate-at-start: true
+    locations: classpath:db/migration/${jade.db.vendor}
+    baseline-on-migrate: true
+    validate-on-migrate: false
+  hibernate-orm:
+    database:
+      generation: none
+  http:
+    test-port: 8081
+  smallrye-health:
+    ui:
+      always-include: false
+  log:
+    level: INFO
+
+jade:
+  db:
+    vendor: postgresql
+  jwt:
+    secret: test-only-jwt-secret-min-32-bytes-required-please-ok
+    issuer: jade-wiki
+    expire-seconds: 7200
+  crypto:
+    master-key: 0123456789abcdef0123456789abcdef
+  wiki:
+    upload-dir: target/test-uploads
+
+mp:
+  jwt:
+    verify:
+      issuer: jade-wiki
+      audiences:

@@ -1,0 +1,23 @@
+# Jade Wiki 基础设施
+# 用法: docker compose -f docker-compose.wiki.yml up -d
+# 端口规划: PG 5434 (底座 5432 / jade-ldap 5433 错开); 无 Redis
+services:
+  jade-wiki-postgres:
+    image: postgres:16-alpine
+    container_name: jade-wiki-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: jade_wiki
+    ports:
+      - "5434:5432"
+    volumes:
+      - jade_wiki_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  jade_wiki_pgdata:
