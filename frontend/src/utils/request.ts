@@ -22,6 +22,22 @@ const service: AxiosInstance = axios.create({
 // 无需认证的公开端点: 带上过期 token 反而会被 MP-JWT 拒绝(401)
 const PUBLIC_ENDPOINTS = ['/api/v1/auth/login', '/api/v1/wiki/share', '/api/v1/wiki/view/', '/api/open/']
 
+// 401 统一处理标志 (防止并发请求重复弹窗/跳转)
+let redirectingToLogin = false
+
+/** 会话失效: 清登录态并回登录页 (裸 HTTP 401 与 R 格式 1001/1002 两条路径共用) */
+function handleSessionExpired() {
+  if (redirectingToLogin) return
+  redirectingToLogin = true
+  const userStore = useUserStore()
+  userStore.logout()
+  ElMessage.error('登录已过期, 请重新登录')
+  if (router.currentRoute.value.path !== '/login') {
+    router.push('/login')
+  }
+  setTimeout(() => { redirectingToLogin = false }, 1000)
+}
+
 // 请求拦截器
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -74,6 +90,11 @@ service.interceptors.response.use(
     return Promise.reject(new Error(res.message))
   },
   (error) => {
+    // 裸 HTTP 401: MP-JWT 过期/无效在 security 层直接 401 (R 格式 1001/1002 走上方成功分支)
+    if (error.response?.status === 401) {
+      handleSessionExpired()
+      return Promise.reject(new Error('登录已过期'))
+    }
     const msg = error.response?.data?.message || error.message || '网络异常'
     ElMessage.error(msg)
     return Promise.reject(error)
