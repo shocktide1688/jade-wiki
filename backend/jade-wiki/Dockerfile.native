@@ -35,6 +35,7 @@ COPY jade-security/pom.xml jade-security/
 COPY jade-log/pom.xml jade-log/
 COPY jade-oss/pom.xml jade-oss/
 COPY jade-codegen/pom.xml jade-codegen/
+COPY jade-spring-bridge/pom.xml jade-spring-bridge/
 COPY jade-admin/pom.xml jade-admin/
 COPY jade-mcp/pom.xml jade-mcp/
 COPY jade-mail/pom.xml jade-mail/
