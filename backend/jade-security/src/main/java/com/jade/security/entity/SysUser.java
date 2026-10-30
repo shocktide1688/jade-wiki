@@ -61,6 +61,10 @@ public class SysUser extends PanacheEntityBase {
      * 所属租户（null = 平台超管，可管理所有租户）
      * 登录时写入 JWT，TenantFilter 据此设置 TenantContext
      */
+    /** 账号来源: local=本地密码, ldap=LDAP 认证源 (jade-ldap-client) */
+    @Column(name = "auth_source", length = 20)
+    public String authSource = "local";
+
     @Column(name = "tenant_id")
     public Long tenantId;
 }

@@ -79,6 +79,16 @@
                 <artifactId>jade-codegen</artifactId>
                 <version>${jade.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.jade</groupId>
+                <artifactId>jade-mail</artifactId>
+                <version>${jade.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jade</groupId>
+                <artifactId>jade-ldap-client</artifactId>
+                <version>${jade.version}</version>
+            </dependency>
 
             <!-- 第三方工具 -->
             <dependency>

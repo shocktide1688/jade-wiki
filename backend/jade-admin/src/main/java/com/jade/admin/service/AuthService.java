@@ -10,9 +10,11 @@ import com.jade.admin.repository.SysUserRoleRepository;
 import com.jade.common.api.R;
 import com.jade.common.constant.ResultCode;
 import com.jade.common.exception.BizException;
+import com.jade.ldapclient.service.LdapAuthenticator;
 import com.jade.security.entity.SysUser;
 import com.jade.security.jwt.MpJwtUtil;
 import com.jade.security.repository.SysUserRepository;
+import jakarta.enterprise.inject.Instance;
 import io.micrometer.core.instrument.Timer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
@@ -59,6 +61,10 @@ public class AuthService {
     @Inject
     Event<LoginEvent> loginEvent;
 
+    // LDAP 认证源 (可选): jade-ldap-client 在 classpath 且配置启用时生效
+    @Inject
+    Instance<LdapAuthenticator> ldapAuthenticator;
+
     @ConfigProperty(name = "jade.jwt.expire-seconds", defaultValue = "7200")
     long expireSeconds;
 
@@ -70,6 +76,17 @@ public class AuthService {
 
             // 2) 校验密码
             boolean valid = verifyPassword(user, req.getPassword());
+
+            // 2.5) LDAP 认证源 (可选): 本地用户不存在或本地密码不匹配时,
+            //      若 LDAP 已启用则尝试 bind 校验; auto_create_user 时自动建本地账号。
+            //      连接失败/用户不在 LDAP 中统一返回 empty, 走原有"用户名或密码错误"。
+            if (!valid && ldapAuthenticator.isResolvable()) {
+                var ldapUser = ldapAuthenticator.get().authenticateAndSync(req.getUsername(), req.getPassword());
+                if (ldapUser.isPresent()) {
+                    user = ldapUser.get();
+                    valid = true;
+                }
+            }
 
             if (user == null || !valid) {
                 metrics.recordLoginFailure();

@@ -28,6 +28,16 @@
             <groupId>com.jade</groupId>
             <artifactId>jade-security</artifactId>
         </dependency>
+        <!-- LDAP 认证源 (可选注入, 配置未启用时零影响) -->
+        <dependency>
+            <groupId>com.jade</groupId>
+            <artifactId>jade-ldap-client</artifactId>
+        </dependency>
+        <!-- 邮件通用能力 -->
+        <dependency>
+            <groupId>com.jade</groupId>
+            <artifactId>jade-mail</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.jade</groupId>
             <artifactId>jade-log</artifactId>

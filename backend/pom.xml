@@ -22,6 +22,8 @@
         <module>jade-spring-bridge</module>
         <module>jade-admin</module>
         <module>jade-wiki</module>
+        <module>jade-mail</module>
+        <module>jade-ldap-client</module>
     </modules>
 
     <properties>
@@ -94,6 +96,16 @@
             <dependency>
                 <groupId>com.jade</groupId>
                 <artifactId>jade-codegen</artifactId>
+                <version>${jade.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jade</groupId>
+                <artifactId>jade-mail</artifactId>
+                <version>${jade.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.jade</groupId>
+                <artifactId>jade-ldap-client</artifactId>
                 <version>${jade.version}</version>
             </dependency>
 

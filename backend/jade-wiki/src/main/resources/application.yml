@@ -41,7 +41,7 @@ quarkus:
     migrate-at-start: true
     # 多数据库支持: jade.db.vendor = postgresql | mysql | sqlite, 对应 db/migration/<vendor>/
     # 第二位置: jade-mcp 基座模块自带的 mcp_token 迁移
-    locations: classpath:db/migration/${jade.db.vendor},classpath:com/jade/mcp/db/migration/${jade.db.vendor}
+    locations: classpath:db/migration/${jade.db.vendor},classpath:com/jade/mcp/db/migration/${jade.db.vendor},classpath:com/jade/mail/db/migration/${jade.db.vendor},classpath:com/jade/ldapclient/db/migration/${jade.db.vendor}
     baseline-on-migrate: true
     validate-on-migrate: false
 

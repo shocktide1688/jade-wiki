@@ -63,6 +63,19 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/pages/system/notice.vue'),
         meta: { title: '通知公告', icon: 'Bell' },
       },
+      // ===== 系统管理-配置 =====
+      {
+        path: 'system/mail',
+        name: 'SystemMail',
+        component: () => import('@/pages/system/mail/index.vue'),
+        meta: { title: '邮件配置', icon: 'Message' },
+      },
+      {
+        path: 'system/ldap',
+        name: 'SystemLdap',
+        component: () => import('@/pages/system/ldap/index.vue'),
+        meta: { title: 'LDAP 配置', icon: 'Key' },
+      },
       // ===== 系统监控 =====
       {
         path: 'monitor/operlog',

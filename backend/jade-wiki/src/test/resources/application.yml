@@ -11,7 +11,7 @@ quarkus:
       max-size: 8
   flyway:
     migrate-at-start: true
-    locations: classpath:db/migration/${jade.db.vendor},classpath:com/jade/mcp/db/migration/${jade.db.vendor}
+    locations: classpath:db/migration/${jade.db.vendor},classpath:com/jade/mcp/db/migration/${jade.db.vendor},classpath:com/jade/mail/db/migration/${jade.db.vendor},classpath:com/jade/ldapclient/db/migration/${jade.db.vendor}
     baseline-on-migrate: true
     validate-on-migrate: false
   hibernate-orm:

@@ -37,10 +37,11 @@ quarkus:
   flyway:
     migrate-at-start: true
     # 多数据库支持: jade.db.vendor = postgresql | mysql | sqlite, 对应 db/migration/<vendor>/
-    locations: classpath:db/migration/${jade.db.vendor}
+    locations: classpath:db/migration/${jade.db.vendor},classpath:com/jade/mail/db/migration/${jade.db.vendor},classpath:com/jade/ldapclient/db/migration/${jade.db.vendor}
     # V4 起, baseline 已有 (V4 之前没有 V1~V3, 因为 admin 的迁移是自包含的)
     baseline-on-migrate: true
     validate-on-migrate: false
+    out-of-order: true
 
   smallrye-openapi:
     enable: true
