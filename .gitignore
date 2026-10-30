@@ -55,6 +55,9 @@ Thumbs.db
 # Project: ignore docs/ (kept local only)
 docs/
 
+# Runtime data (OSS local provider / uploads / sqlite db)
+backend/data/
+
 # IDE
 .idea/
 *.swp

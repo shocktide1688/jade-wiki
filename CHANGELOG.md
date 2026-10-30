@@ -8,6 +8,9 @@
 ## [Unreleased]
 
 ### Added
+- jade-oss：对象存储落地——`OssTemplate` 扩展（upload/delete/open/exists/getSignedUrl），`OssAutoConfigure` 按 `jade.oss.provider` 装配 local/s3 双实现；s3 走 AWS SDK v2 兼容 MinIO/阿里 OSS/华为 OBS/腾讯 COS，自动建桶 + 预签名 URL；非重放流自动暂存临时文件（兼容 http 端点整流签名）
+- jade-wiki：附件链路接入 `OssTemplate`，`storage_path` 由本地路径改为对象 key（`yyyy/MM/uuid.ext`），存量本地路径读取自动兼容
+- 配置位：`jade.oss.*`（provider/endpoint/region/bucket/access-key/secret-key/path-style/create-bucket/local.root-dir），环境变量 `JADE_OSS_*`
 - Quarkus 3.15.7 兼容
 - jade-common：统一响应 R<T>、PageResult<T>、BizException、ResultCode
 - jade-web：TraceIdFilter、JadeOpenApiConfig

@@ -12,7 +12,7 @@
 
     <artifactId>jade-oss</artifactId>
     <name>Jade OSS</name>
-    <description>Jade 对象存储抽象（Local / S3 / MinIO / 阿里 OSS）</description>
+    <description>Jade 对象存储抽象（Local / S3 / MinIO / 阿里 OSS / 华为 OBS）</description>
 
     <dependencies>
         <dependency>
@@ -23,5 +23,45 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
+
+        <!-- AWS SDK v2: 一套 S3 协议通吃 MinIO / 阿里 OSS / 华为 OBS / 腾讯 COS
+             排除默认 http 客户端, 显式用 url-connection (最轻, 无 netty 全家桶) -->
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>netty-nio-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>software.amazon.awssdk</groupId>
+                    <artifactId>apache-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>url-connection-client</artifactId>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 库模块: 注册 CDI bean 到 jandex 索引 (被应用引用时才能被发现) -->
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+                <version>3.2.2</version>
+                <executions>
+                    <execution>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

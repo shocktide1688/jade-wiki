@@ -1,6 +1,7 @@
 package com.jade.wiki.api;
 
 import com.jade.common.api.R;
+import com.jade.common.exception.BizException;
 import com.jade.wiki.api.dto.WikiDtos;
 import com.jade.wiki.entity.WikiAttachment;
 import com.jade.wiki.service.WikiAttachmentService;
@@ -58,7 +59,7 @@ public class WikiAttachmentController {
         }
         try (var in = Files.newInputStream(file.uploadedFile())) {
             WikiAttachment att = attachmentService.upload(actor, itemId,
-                    file.fileName(), file.contentType(), in);
+                    file.fileName(), file.contentType(), in, file.size());
             return R.ok(toView(att));
         } catch (IOException e) {
             return R.fail(5000, "文件读取失败");
@@ -81,17 +82,18 @@ public class WikiAttachmentController {
             // 匿名请求
         }
         WikiAttachment att = attachmentService.requireDownloadable(attachmentId, actor, token);
-        java.nio.file.Path path = attachmentService.resolve(att);
         String encoded = URLEncoder.encode(
                 att.originalName == null ? att.fileName : att.originalName, StandardCharsets.UTF_8)
                 .replace("+", "%20");
         try {
-            return Response.ok(Files.newInputStream(path))
+            return Response.ok(attachmentService.open(att))
                     .header("Content-Disposition", "attachment; filename*=UTF-8''" + encoded)
                     .header("Content-Type", att.contentType == null
                             ? MediaType.APPLICATION_OCTET_STREAM : att.contentType)
                     .build();
-        } catch (IOException e) {
+        } catch (BizException e) {
+            throw e; // 附件不存在/无权限 → 全局异常mapper
+        } catch (RuntimeException e) {
             return Response.status(404).build();
         }
     }

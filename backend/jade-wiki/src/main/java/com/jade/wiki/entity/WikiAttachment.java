@@ -14,7 +14,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 /**
- * 附件/图片（文件存本地磁盘, 表记元数据）
+ * 附件/图片（对象存储: 本地磁盘或 S3 兼容, 表记元数据）
+ * <p>storage_path 存对象 key (如 2026/10/uuid.png); 存量数据可能是本地磁盘路径, 读取时兼容
  */
 @Data
 @EqualsAndHashCode(callSuper = false)

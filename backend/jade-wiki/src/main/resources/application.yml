@@ -116,8 +116,21 @@ jade:
   mcp:
     enabled: true
     path: /mcp
-  wiki:
-    upload-dir: "${JADE_UPLOAD_DIR:./data/uploads}"
+  # 对象存储: local=本地磁盘(默认) / s3=S3兼容(MinIO/阿里OSS/华为OBS/腾讯COS)
+  # s3 模式环境变量示例:
+  #   JADE_OSS_PROVIDER=s3 JADE_OSS_ENDPOINT=http://localhost:9000 JADE_OSS_REGION=us-east-1 \
+  #   JADE_OSS_BUCKET=jade-wiki JADE_OSS_ACCESS_KEY=minioadmin JADE_OSS_SECRET_KEY=minioadmin
+  oss:
+    provider: "${JADE_OSS_PROVIDER:local}"
+    local:
+      root-dir: "${JADE_OSS_LOCAL_ROOT:./data/oss}"
+    endpoint: "${JADE_OSS_ENDPOINT:}"
+    region: "${JADE_OSS_REGION:}"
+    bucket: "${JADE_OSS_BUCKET:jade-wiki}"
+    access-key: "${JADE_OSS_ACCESS_KEY:}"
+    secret-key: "${JADE_OSS_SECRET_KEY:}"
+    path-style: "${JADE_OSS_PATH_STYLE:true}"
+    create-bucket: "${JADE_OSS_CREATE_BUCKET:true}"
 
 "%dev":
   quarkus:

@@ -34,8 +34,10 @@ jade:
     expire-seconds: 7200
   crypto:
     master-key: 0123456789abcdef0123456789abcdef
-  wiki:
-    upload-dir: target/test-uploads
+  oss:
+    provider: local
+    local:
+      root-dir: target/test-oss
 
 mp:
   jwt:

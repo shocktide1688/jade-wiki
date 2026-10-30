@@ -82,6 +82,14 @@ services:
       JADE_JWT_EXPIRE_SECONDS: "${JADE_JWT_EXPIRE_SECONDS:-7200}"
       JADE_JWT_ISSUER: "${JADE_JWT_ISSUER:-jade-platform}"
       JADE_CRYPTO_MASTER_KEY: "${JADE_CRYPTO_MASTER_KEY:-dev-only-aes-key-32-bytes-required-please!!}"
+      # 对象存储: local(默认) | s3; s3 需配 JADE_OSS_ENDPOINT/ACCESS_KEY/SECRET_KEY, MinIO 保持 PATH_STYLE=true
+      JADE_OSS_PROVIDER: "${JADE_OSS_PROVIDER:-local}"
+      JADE_OSS_ENDPOINT: "${JADE_OSS_ENDPOINT:-}"
+      JADE_OSS_REGION: "${JADE_OSS_REGION:-}"
+      JADE_OSS_BUCKET: "${JADE_OSS_BUCKET:-jade}"
+      JADE_OSS_ACCESS_KEY: "${JADE_OSS_ACCESS_KEY:-}"
+      JADE_OSS_SECRET_KEY: "${JADE_OSS_SECRET_KEY:-}"
+      JADE_OSS_PATH_STYLE: "${JADE_OSS_PATH_STYLE:-true}"
       TZ: Asia/Shanghai
 
   # ---------- 后端 jade-demo (8080) ----------
@@ -106,6 +114,13 @@ services:
       JADE_JWT_EXPIRE_SECONDS: "${JADE_JWT_EXPIRE_SECONDS:-7200}"
       JADE_JWT_ISSUER: "${JADE_JWT_ISSUER:-jade-platform}"
       JADE_CRYPTO_MASTER_KEY: "${JADE_CRYPTO_MASTER_KEY:-dev-only-aes-key-32-bytes-required-please!!}"
+      JADE_OSS_PROVIDER: "${JADE_OSS_PROVIDER:-local}"
+      JADE_OSS_ENDPOINT: "${JADE_OSS_ENDPOINT:-}"
+      JADE_OSS_REGION: "${JADE_OSS_REGION:-}"
+      JADE_OSS_BUCKET: "${JADE_OSS_BUCKET:-jade}"
+      JADE_OSS_ACCESS_KEY: "${JADE_OSS_ACCESS_KEY:-}"
+      JADE_OSS_SECRET_KEY: "${JADE_OSS_SECRET_KEY:-}"
+      JADE_OSS_PATH_STYLE: "${JADE_OSS_PATH_STYLE:-true}"
       TZ: Asia/Shanghai
 
   # ---------- 前端 (5173) ----------

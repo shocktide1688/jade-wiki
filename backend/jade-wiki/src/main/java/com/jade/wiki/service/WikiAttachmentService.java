@@ -2,17 +2,16 @@ package com.jade.wiki.service;
 
 import com.jade.common.constant.ResultCode;
 import com.jade.common.exception.BizException;
+import com.jade.oss.core.OssTemplate;
 import com.jade.wiki.entity.WikiAttachment;
 import com.jade.wiki.entity.WikiItem;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -30,8 +29,8 @@ public class WikiAttachmentService {
             "png", "jpg", "jpeg", "gif", "webp", "svg", "bmp", "ico",
             "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "md", "csv", "zip");
 
-    @ConfigProperty(name = "jade.wiki.upload-dir", defaultValue = "./data/uploads")
-    String uploadDir;
+    @Inject
+    OssTemplate oss;
 
     @Inject
     WikiPermissionService permission;
@@ -41,7 +40,7 @@ public class WikiAttachmentService {
 
     @Transactional
     public WikiAttachment upload(Actor actor, Long itemId, String originalName,
-                                 String contentType, InputStream in) {
+                                 String contentType, InputStream in, long size) {
         WikiItem item = null;
         if (itemId != null) {
             item = permission.requireItem(itemId);
@@ -55,30 +54,23 @@ public class WikiAttachmentService {
             throw new BizException(ResultCode.BAD_REQUEST, "不支持的文件类型: " + suffix);
         }
 
-        String dateDir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"));
-        String storedName = UUID.randomUUID().toString().replace("-", "") + "." + suffix;
-        Path dir = Path.of(uploadDir, dateDir);
-        Path target = dir.resolve(storedName);
-        try {
-            Files.createDirectories(dir);
-            long size = Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
-            WikiAttachment att = new WikiAttachment();
-            att.itemId = itemId;
-            att.fileName = storedName;
-            att.originalName = safeName;
-            att.fileSuffix = suffix;
-            att.fileSize = size;
-            att.contentType = contentType;
-            att.storagePath = target.toString();
-            att.uploaderId = actor.userId();
-            att.uploaderName = actor.username();
-            att.persist();
-            return att;
-        } catch (BizException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new BizException(ResultCode.INTERNAL_ERROR, "文件保存失败");
-        }
+        // 对象 key: yyyy/MM/uuid.ext — storagePath 只存 key, 读写走 OssTemplate (provider 可切 local/s3)
+        String key = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"))
+                + "/" + UUID.randomUUID().toString().replace("-", "") + "." + suffix;
+        oss.upload(key, in, size, contentType);
+
+        WikiAttachment att = new WikiAttachment();
+        att.itemId = itemId;
+        att.fileName = key.substring(key.lastIndexOf('/') + 1);
+        att.originalName = safeName;
+        att.fileSuffix = suffix;
+        att.fileSize = size;
+        att.contentType = contentType;
+        att.storagePath = key;
+        att.uploaderId = actor.userId();
+        att.uploaderName = actor.username();
+        att.persist();
+        return att;
     }
 
     /** 下载鉴权: 公开项目/持分享 token/项目成员 可读; 未关联项目的附件要求登录(由调用方控制) */
@@ -103,7 +95,27 @@ public class WikiAttachmentService {
         throw new BizException(ResultCode.FORBIDDEN, "无权访问该附件");
     }
 
-    public Path resolve(WikiAttachment att) {
-        return Path.of(att.storagePath);
+    /** 打开附件读取流: 新数据走 OssTemplate; 存量本地路径直接读磁盘(升级迁移前兼容) */
+    public InputStream open(WikiAttachment att) {
+        if (!isLegacyLocalPath(att.storagePath)) {
+            if (!oss.exists(att.storagePath)) {
+                throw new BizException(ResultCode.NOT_FOUND, "附件文件不存在");
+            }
+            return oss.open(att.storagePath);
+        }
+        Path legacy = Path.of(att.storagePath);
+        if (!Files.isRegularFile(legacy)) {
+            throw new BizException(ResultCode.NOT_FOUND, "附件文件不存在");
+        }
+        try {
+            return Files.newInputStream(legacy);
+        } catch (Exception e) {
+            throw new BizException(ResultCode.NOT_FOUND, "附件文件不存在");
+        }
+    }
+
+    /** 存量数据识别: 老版本把本地磁盘路径(绝对/./开头)存进 storage_path, 新版本只存对象 key */
+    static boolean isLegacyLocalPath(String storagePath) {
+        return storagePath.startsWith("/") || storagePath.startsWith("./") || storagePath.startsWith("../");
     }
 }
