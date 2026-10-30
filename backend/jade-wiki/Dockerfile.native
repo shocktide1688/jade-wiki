@@ -50,7 +50,8 @@ COPY . .
 RUN mvn -B -DskipTests \
         -pl jade-wiki -am \
         clean package \
-        -Dnative \
+        -Dquarkus.native.enabled=true \
+        -Dquarkus.native.container-build=false \
         -Dquarkus.native.additional-build-args=-march=compatibility
 
 RUN ls -lh /build/jade-wiki/target/jade-wiki-*-runner
