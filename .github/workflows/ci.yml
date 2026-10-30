@@ -225,8 +225,8 @@ jobs:
           # 文件名不能含冒号: 去掉 sha256: 前缀, 合并时拼接回去
           API_D=$(echo "${{ steps.push-api.outputs.digest }}" | sed 's/sha256://')
           AIO_D=$(echo "${{ steps.push-aio.outputs.digest }}" | sed 's/sha256://')
-          echo "${{ steps.push-api.outputs.digest }}" > "/tmp/digests/native-${{ matrix.db_kind }}/$API_D"
-          echo "${{ steps.push-aio.outputs.digest }}" > "/tmp/digests/aio-${{ matrix.db_kind }}/$AIO_D"
+          echo "$API_D" > "/tmp/digests/native-${{ matrix.db_kind }}/$API_D"
+          echo "$AIO_D" > "/tmp/digests/aio-${{ matrix.db_kind }}/$AIO_D"
       - name: Upload digests
         uses: actions/upload-artifact@v4
         with:
