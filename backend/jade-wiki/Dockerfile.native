@@ -52,7 +52,7 @@ RUN mvn -B -DskipTests \
         clean package \
         -Dquarkus.native.enabled=true \
         -Dquarkus.native.container-build=false \
-        -Dquarkus.native.additional-build-args=-march=compatibility
+        -Dquarkus.native.additional-build-args=-march=compatibility,--initialize-at-run-time=com.jade.mcp.token.McpTokenService
 
 RUN ls -lh /build/jade-wiki/target/jade-wiki-*-runner
 

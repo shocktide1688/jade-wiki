@@ -20,8 +20,6 @@ import java.util.Optional;
 @ApplicationScoped
 public class McpTokenService {
 
-    private static final SecureRandom RANDOM = new SecureRandom();
-
     /**
      * 为用户生成新令牌 (jmt_ + 48 位随机 hex), 明文仅此一次返回
      */
@@ -63,8 +61,9 @@ public class McpTokenService {
     }
 
     private String randomHex(int bytes) {
+        // GraalVM native: static SecureRandom 会进 image heap (UnsupportedFeature), 每次创建
         byte[] buf = new byte[bytes];
-        RANDOM.nextBytes(buf);
+        new SecureRandom().nextBytes(buf);
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(buf)).substring(0, bytes * 2);
         } catch (NoSuchAlgorithmException e) {
