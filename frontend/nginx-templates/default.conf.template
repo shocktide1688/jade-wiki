@@ -1,0 +1,25 @@
+# 由 nginx 官方镜像自动 envsubst (BACKEND_URL 环境变量, 默认单容器同机后端)
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # API + 健康检查代理到后端
+    location /api/ {
+        proxy_pass ${BACKEND_URL};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        client_max_body_size 20m;
+    }
+    location /q/ {
+        proxy_pass ${BACKEND_URL};
+    }
+
+    # SPA 前端路由回退
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

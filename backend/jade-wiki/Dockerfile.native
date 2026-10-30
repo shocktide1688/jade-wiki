@@ -1,13 +1,26 @@
 # =====================================================
-# Jade Wiki · GraalVM Native Image
-# 完全在容器内构建，宿主机无需 GraalVM
-# 用法（在 backend/ 目录下）：
-#   docker build -f jade-wiki/Dockerfile.native -t jade-wiki:native .
-#   docker run --rm -p 8082:8082 --cpus=4 --memory=6g jade-wiki:native
+# Jade Wiki · 统一多目标 Dockerfile (context = 仓库根目录)
+# =====================================================
+# 产物 (由 --target 选择):
+#   --target api        → 纯后端 native (推 ghcr.io/.../jade-wiki-native)
+#   --target all-in-one → 前端(nginx) + 后端 单容器单端口 (推 ghcr.io/.../jade-wiki)
+#
+# 用法:
+#   docker build -f backend/jade-wiki/Dockerfile.native --target all-in-one -t jade-wiki:latest .
+#   docker run -d -p 8082:8082 -v wiki-data:/app/data jade-wiki:latest
+#   # UI: http://localhost:8082  API 同端口 (nginx 反代 /api /q 到内部二进制)
 # =====================================================
 
-# ---------- Stage 1: Native Builder ----------
-FROM ghcr.io/graalvm/native-image-community:25 AS builder
+# ============ Stage 1: 前端构建 ============
+FROM node:24-alpine AS frontend
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ============ Stage 2: Native Builder ============
+FROM ghcr.io/graalvm/native-image-community:25 AS native-builder
 
 USER root
 WORKDIR /build
@@ -27,56 +40,91 @@ RUN curl -fsSL -o /tmp/maven.tar.gz \
     && rm /tmp/maven.tar.gz
 
 # 拷贝 pom（最大化缓存）
-COPY pom.xml ./
-COPY jade-dependencies/pom.xml jade-dependencies/
-COPY jade-common/pom.xml jade-common/
-COPY jade-web/pom.xml jade-web/
-COPY jade-security/pom.xml jade-security/
-COPY jade-log/pom.xml jade-log/
-COPY jade-oss/pom.xml jade-oss/
-COPY jade-codegen/pom.xml jade-codegen/
-COPY jade-spring-bridge/pom.xml jade-spring-bridge/
-COPY jade-admin/pom.xml jade-admin/
-COPY jade-mcp/pom.xml jade-mcp/
-COPY jade-mail/pom.xml jade-mail/
-COPY jade-ldap-client/pom.xml jade-ldap-client/
-COPY jade-wiki/pom.xml jade-wiki/
+COPY backend/pom.xml ./
+COPY backend/jade-dependencies/pom.xml jade-dependencies/
+COPY backend/jade-common/pom.xml jade-common/
+COPY backend/jade-web/pom.xml jade-web/
+COPY backend/jade-security/pom.xml jade-security/
+COPY backend/jade-log/pom.xml jade-log/
+COPY backend/jade-oss/pom.xml jade-oss/
+COPY backend/jade-codegen/pom.xml jade-codegen/
+COPY backend/jade-spring-bridge/pom.xml jade-spring-bridge/
+COPY backend/jade-admin/pom.xml jade-admin/
+COPY backend/jade-mcp/pom.xml jade-mcp/
+COPY backend/jade-mail/pom.xml jade-mail/
+COPY backend/jade-ldap-client/pom.xml jade-ldap-client/
+COPY backend/jade-wiki/pom.xml jade-wiki/
 
 RUN mvn -B -q -DskipTests dependency:go-offline || true
 
-# 拷贝源码并构建 native
-# -march=compatibility: 兼容旧 x86-64 CPU (CI 新 CPU 构建的二进制在旧部署机不炸)
-COPY . .
+COPY backend/ ./
+# DB_KIND 构建参数: sqlite (自托管默认) | postgresql (生产 API)
+#   db-kind 是 Quarkus build-time 配置, 镜像内不可用 env 切换 —— 不同库 = 不同镜像变体
+ARG DB_KIND=sqlite
 RUN mvn -B -DskipTests \
         -pl jade-wiki -am \
         clean package \
+        -Dquarkus.profile=${DB_KIND} \
+        -Dquarkus.datasource.db-kind=${DB_KIND} \
         -Dquarkus.native.enabled=true \
         -Dquarkus.native.container-build=false \
         -Dquarkus.native.additional-build-args=-march=compatibility,--initialize-at-run-time=com.jade.mcp.token.McpTokenService
 
 RUN ls -lh /build/jade-wiki/target/jade-wiki-*-runner
 
-# ---------- Stage 2: 运行时镜像 ----------
-FROM debian:bookworm-slim
+# ============ Target 1: 纯后端 native ============
+FROM debian:bookworm-slim AS api
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates libstdc++6 zlib1g libgcc1 wget \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /build/jade-wiki/target/jade-wiki-*-runner /app/jade-wiki
+COPY --from=native-builder /build/jade-wiki/target/jade-wiki-*-runner /app/jade-wiki
 RUN chmod +x /app/jade-wiki
 
-# SQLite 模式数据落盘 (挂卷)
 VOLUME ["/app/data"]
 RUN mkdir -p /app/data
 
 EXPOSE 8082
 
-ENV JADE_DB_VENDOR=sqlite
 ENV DB_URL="jdbc:sqlite:./data/jade_wiki.db?journal_mode=WAL&busy_timeout=5000&date_class=text"
 
 ENTRYPOINT ["/app/jade-wiki"]
 
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
     CMD wget -qO- http://localhost:8082/q/health/live || exit 1
+
+# ============ Target 2: All-in-One (前端 + 后端, 单容器单端口) ============
+FROM debian:bookworm-slim AS all-in-one
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates libstdc++6 zlib1g libgcc1 wget nginx \
+    && rm -rf /var/lib/apt/lists/*
+
+# 后端二进制 (内部 127.0.0.1:8083, 由 entrypoint 环境注入)
+COPY --from=native-builder /build/jade-wiki/target/jade-wiki-*-runner /app/jade-wiki
+RUN chmod +x /app/jade-wiki
+
+# 前端静态文件 + nginx 配置 + 启动脚本
+COPY --from=frontend /app/dist/ /usr/share/nginx/html/
+COPY backend/jade-wiki/nginx-all-in-one.conf /etc/nginx/conf.d/app.conf
+COPY backend/jade-wiki/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# SQLite 数据落盘
+VOLUME ["/app/data"]
+RUN mkdir -p /app/data
+
+# 对外只暴露 8082 (nginx): UI 由 nginx 直出, /api /q 反代到内部二进制 (127.0.0.1:8083)
+EXPOSE 8082
+
+ENV QUARKUS_HTTP_HOST=127.0.0.1
+ENV QUARKUS_HTTP_PORT=8083
+ENV DB_URL="jdbc:sqlite:./data/jade_wiki.db?journal_mode=WAL&busy_timeout=5000&date_class=text"
+
+HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
+    CMD wget -qO- http://localhost:8082/q/health/live || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]
