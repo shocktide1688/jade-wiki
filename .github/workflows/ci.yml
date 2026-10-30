@@ -249,12 +249,46 @@ jobs:
       contents: read
       packages: write
     steps:
-      - name: Download digests
+      - name: Download digests (native sqlite)
         uses: actions/download-artifact@v4
         with:
-          path: /tmp/digests
-          pattern: digests-*
-          merge-multiple: false
+          name: digests-native-sqlite-ubuntu-latest
+          path: /tmp/digests/native-sqlite-amd64
+      - name: Download digests (native sqlite arm)
+        uses: actions/download-artifact@v4
+        with:
+          name: digests-native-sqlite-ubuntu-24.04-arm
+          path: /tmp/digests/native-sqlite-arm64
+      - name: Download digests (native postgresql)
+        uses: actions/download-artifact@v4
+        with:
+          name: digests-native-postgresql-ubuntu-latest
+          path: /tmp/digests/native-postgresql-amd64
+      - name: Download digests (native postgresql arm)
+        uses: actions/download-artifact@v4
+        with:
+          name: digests-native-postgresql-ubuntu-24.04-arm
+          path: /tmp/digests/native-postgresql-arm64
+      - name: Download digests (aio sqlite)
+        uses: actions/download-artifact@v4
+        with:
+          name: digests-aio-sqlite-ubuntu-latest
+          path: /tmp/digests/aio-sqlite-amd64
+      - name: Download digests (aio sqlite arm)
+        uses: actions/download-artifact@v4
+        with:
+          name: digests-aio-sqlite-ubuntu-24.04-arm
+          path: /tmp/digests/aio-sqlite-arm64
+      - name: Download digests (aio postgresql)
+        uses: actions/download-artifact@v4
+        with:
+          name: digests-aio-postgresql-ubuntu-latest
+          path: /tmp/digests/aio-postgresql-amd64
+      - name: Download digests (aio postgresql arm)
+        uses: actions/download-artifact@v4
+        with:
+          name: digests-aio-postgresql-ubuntu-24.04-arm
+          path: /tmp/digests/aio-postgresql-arm64
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -264,13 +298,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Merge manifest — jade-wiki-native (纯后端, sqlite 自托管)
-        working-directory: /tmp/digests/digests-native-sqlite
+        working-directory: /tmp/digests/native-sqlite-amd64 /tmp/digests/native-sqlite-arm64
         run: |
           docker buildx imagetools create \
             -t ghcr.io/shocktide1688/jade-wiki-native:sqlite \
             $(printf 'ghcr.io/shocktide1688/jade-wiki-native@sha256:%s ' *)
       - name: Merge manifest — jade-wiki-native (纯后端, postgresql 生产)
-        working-directory: /tmp/digests/digests-native-postgresql
+        working-directory: /tmp/digests/native-postgresql-amd64 /tmp/digests/native-postgresql-arm64
         run: |
           docker buildx imagetools create \
             -t ghcr.io/shocktide1688/jade-wiki-native:latest \
@@ -278,14 +312,14 @@ jobs:
             -t ghcr.io/shocktide1688/jade-wiki-native:sha-${GITHUB_SHA::7} \
             $(printf 'ghcr.io/shocktide1688/jade-wiki-native@sha256:%s ' *)
       - name: Merge manifest — jade-wiki (all-in-one sqlite 自托管)
-        working-directory: /tmp/digests/digests-aio-sqlite
+        working-directory: /tmp/digests/aio-sqlite-amd64 /tmp/digests/aio-sqlite-arm64
         run: |
           docker buildx imagetools create \
             -t ghcr.io/shocktide1688/jade-wiki:latest \
             -t ghcr.io/shocktide1688/jade-wiki:sha-${GITHUB_SHA::7} \
             $(printf 'ghcr.io/shocktide1688/jade-wiki@sha256:%s ' *)
       - name: Merge manifest — jade-wiki (all-in-one postgresql)
-        working-directory: /tmp/digests/digests-aio-postgresql
+        working-directory: /tmp/digests/aio-postgresql-amd64 /tmp/digests/aio-postgresql-arm64
         run: |
           docker buildx imagetools create \
             -t ghcr.io/shocktide1688/jade-wiki:pg \
