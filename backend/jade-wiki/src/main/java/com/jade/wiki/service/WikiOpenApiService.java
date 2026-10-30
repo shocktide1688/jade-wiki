@@ -22,8 +22,6 @@ import static com.jade.wiki.service.WikiPermissionService.Actor;
 @ApplicationScoped
 public class WikiOpenApiService {
 
-    private static final SecureRandom RANDOM = new SecureRandom();
-
     @Inject
     WikiPermissionService permission;
 
@@ -122,8 +120,9 @@ public class WikiOpenApiService {
     }
 
     private String randomHex(int bytes) {
+        // GraalVM native: static SecureRandom 会进 image heap (UnsupportedFeature), 每次创建
         byte[] buf = new byte[bytes];
-        RANDOM.nextBytes(buf);
+        new SecureRandom().nextBytes(buf);
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(buf)).substring(0, bytes * 2);
         } catch (NoSuchAlgorithmException e) {
