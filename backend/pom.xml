@@ -16,6 +16,7 @@
         <module>jade-common</module>
         <module>jade-web</module>
         <module>jade-security</module>
+        <module>jade-mcp</module>
         <module>jade-log</module>
         <module>jade-oss</module>
         <module>jade-codegen</module>
