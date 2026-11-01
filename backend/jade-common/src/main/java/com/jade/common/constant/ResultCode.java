@@ -21,6 +21,9 @@ public enum ResultCode {
     UNAUTHORIZED(1001, "未登录或登录已过期"),
     TOKEN_INVALID(1002, "token 无效"),
     FORBIDDEN(1003, "无权限访问"),
+    BAD_CREDENTIALS(1004, "用户名或密码错误"),
+    CAPTCHA_REQUIRED(1005, "请输入验证码"),
+    CAPTCHA_INVALID(1006, "验证码错误"),
 
     BAD_REQUEST(4000, "请求参数错误"),
     VALIDATION_ERROR(4001, "参数校验失败"),

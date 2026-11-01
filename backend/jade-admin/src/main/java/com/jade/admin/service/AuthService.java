@@ -33,12 +33,14 @@ import java.util.Set;
  *   - 统一使用 BCrypt 验证（不再有明文密码分支）
  *   - 移除"固定密码 admin123"绕过逻辑
  *   - 统一错误消息（"用户名或密码错误"，不暴露用户是否存在）
- *   - 登录失败抛 401
+ *   - 登录失败抛 BAD_CREDENTIALS(1004)（区别于未登录 1001，避免前端误判"登录过期"）
  *   - 计时攻击防护：无论用户是否存在都执行一次 BCrypt.verify
  *
  * v2 改进：
  *   - 登录后异步写 sys_login_log（CDI event 解耦）
  *   - 从 sys_user_role 读真实角色，不再写死 admin/user
+ * v3 改进：
+ *   - 失败超次/开关开启时强制图形验证码（LoginAttemptService + CaptchaService）
  */
 @ApplicationScoped
 public class AuthService {
@@ -51,6 +53,12 @@ public class AuthService {
 
     @Inject
     SysUserRoleRepository userRoleRepository;
+
+    @Inject
+    CaptchaService captchaService;
+
+    @Inject
+    LoginAttemptService attemptService;
 
     @Inject
     MpJwtUtil mpJwtUtil;
@@ -71,6 +79,19 @@ public class AuthService {
     public R<LoginResponse> login(LoginRequest req, String ip) {
         Timer.Sample sample = Timer.start();
         try {
+            // 0) 失败超次（或验证码开关开启）时强制校验图形验证码。
+            //    未超次但客户端带了验证码（页面残留的验证码行）也认真校验——
+            //    计数在进程内, 重启/窗口过期后计数清零, 残留的验证码行不能"随便输都放行"
+            if (attemptService.captchaRequired(req.getUsername())
+                    && (isBlank(req.getUuid()) || isBlank(req.getCode()))) {
+                throw new BizException(ResultCode.CAPTCHA_REQUIRED);
+            }
+            if (!isBlank(req.getUuid()) || !isBlank(req.getCode())) {
+                if (!captchaService.verify(req.getUuid(), req.getCode())) {
+                    throw new BizException(ResultCode.CAPTCHA_INVALID);
+                }
+            }
+
             // 1) 查用户
             SysUser user = userRepository.findByUsername(req.getUsername()).orElse(null);
 
@@ -89,9 +110,10 @@ public class AuthService {
             }
 
             if (user == null || !valid) {
+                attemptService.recordFailure(req.getUsername());
                 metrics.recordLoginFailure();
                 loginEvent.fire(new LoginEvent(req.getUsername(), ip, false, "用户名或密码错误"));
-                throw new BizException(ResultCode.UNAUTHORIZED, "用户名或密码错误");
+                throw new BizException(ResultCode.BAD_CREDENTIALS, "用户名或密码错误");
             }
 
             // 3) 账号状态
@@ -113,6 +135,7 @@ public class AuthService {
             );
 
             metrics.recordLoginSuccess();
+            attemptService.reset(req.getUsername());
             loginEvent.fire(new LoginEvent(req.getUsername(), ip, true, "登录成功"));
 
             return R.ok(new LoginResponse(
@@ -138,6 +161,10 @@ public class AuthService {
             roleCodes.add("user");
         }
         return roleCodes;
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 
     private boolean verifyPassword(SysUser user, String rawPassword) {

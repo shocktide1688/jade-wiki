@@ -1,8 +1,10 @@
 package com.jade.admin.controller;
 
+import com.jade.admin.dto.CaptchaResponse;
 import com.jade.admin.dto.LoginRequest;
 import com.jade.admin.dto.LoginResponse;
 import com.jade.admin.service.AuthService;
+import com.jade.admin.service.CaptchaService;
 import com.jade.common.api.R;
 import com.jade.security.entity.SysUser;
 import com.jade.security.jwt.MpJwtUtil;
@@ -31,6 +33,9 @@ public class AuthController {
     AuthService authService;
 
     @Inject
+    CaptchaService captchaService;
+
+    @Inject
     SysUserRepository userRepository;
 
     @Inject
@@ -49,6 +54,14 @@ public class AuthController {
     public R<LoginResponse> login(@Valid LoginRequest req, @Context HttpHeaders headers) {
         String ip = clientIp(headers);
         return authService.login(req, ip);
+    }
+
+    @GET
+    @Path("/captcha")
+    @PermitAll
+    @Operation(summary = "获取图形验证码", description = "返回 uuid + SVG 图片，登录时随 uuid/code 回传")
+    public R<CaptchaResponse> captcha() {
+        return R.ok(captchaService.generate());
     }
 
     @GET
