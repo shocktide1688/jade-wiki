@@ -59,8 +59,12 @@ public class AuthController {
     @GET
     @Path("/captcha")
     @PermitAll
-    @Operation(summary = "获取图形验证码", description = "返回 uuid + SVG 图片，登录时随 uuid/code 回传")
-    public R<CaptchaResponse> captcha() {
+    @Operation(summary = "获取图形验证码", description = "返回 uuid + PNG 图片，登录时随 uuid/code 回传")
+    public R<CaptchaResponse> captcha(@Context HttpHeaders headers) {
+        // IP 限流(进程内): 30 次/分钟, 防刷图/资源滥用
+        if (!captchaService.allowIssue(clientIp(headers))) {
+            return R.fail(429, "获取验证码过于频繁, 请稍后再试");
+        }
         return R.ok(captchaService.generate());
     }
 

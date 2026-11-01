@@ -1,7 +1,9 @@
 package com.jade.admin;
 
+import com.jade.admin.service.CaptchaService;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +19,9 @@ import static org.hamcrest.Matchers.notNullValue;
  */
 @QuarkusTest
 class AuthControllerTest {
+
+    @Inject
+    CaptchaService captchaService;
 
     @BeforeEach
     void resetFailureCount() {
@@ -34,7 +39,7 @@ class AuthControllerTest {
                     .extract().jsonPath();
             given().contentType(ContentType.JSON).body(
                             "{\"username\":\"admin\",\"password\":\"admin123\",\"uuid\":\"" + captcha.getString("data.uuid")
-                                    + "\",\"code\":\"" + solveCaptcha(captcha.getString("data.image")) + "\"}")
+                                    + "\",\"code\":\"" + captchaService.peekAnswer(captcha.getString("data.uuid")) + "\"}")
                     .when().post("/api/v1/auth/login")
                     .then().statusCode(200).body("code", equalTo(0));
         }
@@ -88,6 +93,17 @@ class AuthControllerTest {
     }
 
     @Test
+    void login_unknown_user_returns_bad_credentials() {
+        // 回归: 不存在的用户(日志表无成功记录)曾因 LocalDateTime.MIN 超出 PG
+        // timestamp 范围而 500, 必须正常返回 1004
+        given().contentType(ContentType.JSON).body("""
+                {"username":"nosuchuser","password":"whatever"}
+                """)
+                .when().post("/api/v1/auth/login")
+                .then().statusCode(200).body("code", equalTo(1004));
+    }
+
+    @Test
     void me_without_token_returns_401() {
         given()
                 .when()
@@ -133,7 +149,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void captcha_endpoint_returns_svg() {
+    void captcha_endpoint_returns_png() {
         given()
                 .when()
                 .get("/api/v1/auth/captcha")
@@ -141,7 +157,7 @@ class AuthControllerTest {
                 .statusCode(200)
                 .body("code", equalTo(0))
                 .body("data.uuid", notNullValue())
-                .body("data.image", containsString("data:image/svg+xml;base64,"));
+                .body("data.image", containsString("data:image/png;base64,"));
     }
 
     @Test
@@ -168,7 +184,7 @@ class AuthControllerTest {
                 .extract().jsonPath();
         given().contentType(ContentType.JSON).body(
                         "{\"username\":\"admin\",\"password\":\"admin123\",\"uuid\":\"" + captcha.getString("data.uuid")
-                                + "\",\"code\":\"" + solveCaptcha(captcha.getString("data.image")) + "\"}")
+                                + "\",\"code\":\"" + captchaService.peekAnswer(captcha.getString("data.uuid")) + "\"}")
                 .when().post("/api/v1/auth/login")
                 .then().statusCode(200).body("code", equalTo(0));
 
@@ -226,15 +242,4 @@ class AuthControllerTest {
                 .then().statusCode(200).body("code", equalTo(0));
     }
 
-    /** 从生成的 SVG（base64 data URI）里按顺序抠出验证码字符 */
-    private String solveCaptcha(String dataUri) {
-        String svg = new String(java.util.Base64.getDecoder().decode(
-                dataUri.substring("data:image/svg+xml;base64,".length())), java.nio.charset.StandardCharsets.UTF_8);
-        StringBuilder code = new StringBuilder();
-        var m = java.util.regex.Pattern.compile("<text[^>]*>([^<]+)</text>").matcher(svg);
-        while (m.find()) {
-            code.append(m.group(1));
-        }
-        return code.toString();
-    }
 }
