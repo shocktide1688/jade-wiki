@@ -8,6 +8,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
 import App from './App.vue'
 import router from './router'
+import { i18n } from './i18n'
 import permissionDirective from './directives/permission'
 import './styles/index.scss'
 
@@ -17,6 +18,7 @@ pinia.use(piniaPluginPersistedstate)
 
 app.use(pinia)
 app.use(router)
+app.use(i18n)
 app.use(ElementPlus, { locale: zhCn })
 app.directive('permission', permissionDirective)
 

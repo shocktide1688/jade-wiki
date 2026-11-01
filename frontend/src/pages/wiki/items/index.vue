@@ -382,6 +382,19 @@ onMounted(load)
 .item-card {
   margin-bottom: 16px;
   cursor: pointer;
+  /* 现代工具风: 发丝边框 + 极淡阴影, 悬浮轻微上浮 */
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.item-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 168, 107, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.item-card:hover .card-head .title {
+  color: #00a86b;
 }
 .card-head {
   display: flex;

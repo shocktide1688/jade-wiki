@@ -69,3 +69,9 @@ monitoring/screenshots/
 
 # TS 增量编译缓存
 frontend/tsconfig.tsbuildinfo
+
+# showdoc 导入缓存/原始导出
+utils/showdoc-import/__pycache__/
+utils/showdoc-import/raw/
+utils/showdoc-import/imgs/
+utils/showdoc-import/cache/
