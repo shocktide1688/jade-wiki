@@ -161,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'WikiItems' })
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
